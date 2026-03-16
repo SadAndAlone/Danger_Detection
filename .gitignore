@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+.env
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# IDE / OS
+.vs/
+.vscode/
+*.suo
+*.user
+.DS_Store
+Thumbs.db
+
+# Данные и артефакты (тяжёлые или перегенерируемые)
+data/
+data_video/
+data_photos/
+videos/
+output_frames/
+danger_detection/checkpoints/*.pth
+
+# Оставляем папку checkpoints в репо (пустую или с README)
+!danger_detection/checkpoints/.gitkeep
