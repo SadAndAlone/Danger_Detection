@@ -3,24 +3,35 @@ Dzielenie wideo na klatki i segmenty (OpenCV).
 """
 import cv2
 from pathlib import Path
-from typing import List, Tuple, Generator
+from typing import Any, List, Tuple, Generator
 import numpy as np
+
+from .config import IMG_SIZE
+
+# Domyślny resize = wejście modelu; jawne ``resize=None`` = bez skalowania (oryginalna rozdzielczość).
+_USE_CONFIG_IMG_SIZE = object()
 
 
 def video_to_frames(
     video_path: str | Path,
     every_n_frames: int = 1,
     max_frames: int | None = None,
-    resize: Tuple[int, int] | None = (64, 64),
+    resize: Any = _USE_CONFIG_IMG_SIZE,
 ) -> List[np.ndarray]:
     """
     Czyta wideo i zwraca listę klatek (BGR, numpy).
     :param video_path: ścieżka do pliku wideo
     :param every_n_frames: co którą klatkę brać (1 = wszystkie)
     :param max_frames: maksymalna liczba klatek (None = bez limitu)
-    :param resize: (H, W) do przeskalowania; None = oryginalny rozmiar
+    :param resize: (H, W); domyślnie ``(IMG_SIZE, IMG_SIZE)`` z ``config``; ``None`` = bez skalowania
     :return: lista arrayów (H, W, 3) BGR
     """
+    eff_resize: Tuple[int, int] | None
+    if resize is _USE_CONFIG_IMG_SIZE:
+        eff_resize = (IMG_SIZE, IMG_SIZE)
+    else:
+        eff_resize = resize  # type: ignore[assignment]
+
     path = Path(video_path)
     if not path.exists():
         raise FileNotFoundError(f"Plik wideo nie istnieje: {path}")
@@ -37,8 +48,8 @@ def video_to_frames(
             if not ret:
                 break
             if idx % every_n_frames == 0:
-                if resize:
-                    frame = cv2.resize(frame, (resize[1], resize[0]), interpolation=cv2.INTER_LINEAR)
+                if eff_resize:
+                    frame = cv2.resize(frame, (eff_resize[1], eff_resize[0]), interpolation=cv2.INTER_LINEAR)
                 frames.append(frame)
                 if max_frames is not None and len(frames) >= max_frames:
                     break
@@ -52,11 +63,17 @@ def video_to_frames(
 def video_to_frame_generator(
     video_path: str | Path,
     every_n_frames: int = 1,
-    resize: Tuple[int, int] | None = (64, 64),
+    resize: Any = _USE_CONFIG_IMG_SIZE,
 ) -> Generator[np.ndarray, None, None]:
     """
     Generator klatek (oszczędza pamięć przy długich wideo).
+    Domyślnie ``(IMG_SIZE, IMG_SIZE)``; ``resize=None`` = bez skalowania.
     """
+    if resize is _USE_CONFIG_IMG_SIZE:
+        eff_resize: Tuple[int, int] | None = (IMG_SIZE, IMG_SIZE)
+    else:
+        eff_resize = resize  # type: ignore[assignment]
+
     path = Path(video_path)
     if not path.exists():
         raise FileNotFoundError(f"Plik wideo nie istnieje: {path}")
@@ -72,8 +89,8 @@ def video_to_frame_generator(
             if not ret:
                 break
             if idx % every_n_frames == 0:
-                if resize:
-                    frame = cv2.resize(frame, (resize[1], resize[0]), interpolation=cv2.INTER_LINEAR)
+                if eff_resize:
+                    frame = cv2.resize(frame, (eff_resize[1], eff_resize[0]), interpolation=cv2.INTER_LINEAR)
                 yield frame
             idx += 1
     finally:
@@ -106,7 +123,7 @@ def extract_segments(
     video_path: str | Path,
     segment_duration_sec: float = 2.0,
     fps: float = 8.0,
-    resize: Tuple[int, int] = (64, 64),
+    resize: Tuple[int, int] = (IMG_SIZE, IMG_SIZE),
 ) -> List[Tuple[float, float, List[np.ndarray]]]:
     """
     Dzieli wideo na segmenty czasowe i dla każdego zwraca listę klatek.
@@ -162,7 +179,7 @@ def extract_frames_for_segment(
     segment_index: int,
     segment_duration_sec: float = 2.0,
     fps: float = 8.0,
-    resize: Tuple[int, int] = (64, 64),
+    resize: Tuple[int, int] = (IMG_SIZE, IMG_SIZE),
 ) -> List[np.ndarray]:
     """
     Wyciąga klatki tylko dla jednego segmentu (bez ładowania całego wideo).

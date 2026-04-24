@@ -2,7 +2,7 @@
 
 ## Cel projektu (z wymagań)
 
-- **Klasy:** bójka, palenie papierosów, pożar (ogień/dym), brak zagrożenia  
+- **Klasy (semantyka):** bójka, palenie papierosów, pożar (ogień/dym), brak zagrożenia — **w kodzie i folderach `data_video/`:** `bojka`, `palenie`, `pozar`, `brak_zagrozenia` (bez polskich znaków)  
 - **Pipeline:** Wideo → klatki → CNN (cechy) → LSTM (sekwencja) → klasyfikacja  
 - **Wynik:** przedziały czasowe z prawdopodobieństwami (np. Bójka: 00:12–00:18, Pożar: 01:03–01:09)  
 - **Stack:** Python, PyTorch, OpenCV, FastAPI, HTML/CSS
@@ -14,7 +14,7 @@
 1. **Zbiór danych** — patrz sekcja **„Zbiory danych (datasety)”** poniżej.
 2. **Dzielenie wideo na klatki (OpenCV)**
    - Skrypt: wczytaj plik wideo → zapisz klatki co N sekund (np. co 1–2 s) lub co K klatek.
-   - Zapisywanie w katalogach: `data_video/bójka/`, `data_video/pożar/` itd. (albo jeden plik z adnotacjami).
+   - Zapisywanie w katalogach: `data_video/bojka/`, `data_video/pozar/` itd. (albo jeden plik z adnotacjami).
 3. **Dataset dla PyTorch**
    - Dataset ładujący **sekwencje klatek** (np. 16 klatek = ~2 s), nie pojedyncze zdjęcia.
    - Normalizacja spójna z obecnym kodem (np. 64×64 lub 224×224, Normalize(0.5, 0.5, 0.5)).
@@ -32,7 +32,7 @@
    - LSTM przetwarza sekwencję; na wyjściu (ostatni stan lub uśrednienie) → warstwa liniowa → 4 klasy.
 3. **Trenowanie**
    - Loss: CrossEntropy. Metryki: accuracy, precision, recall dla każdej klasy.
-   - Na początek możesz trenować na **klatkach z etykietą segmentu** (każda sekwencja ma jedną etykietę: bójka/pożar/palenie/brak).
+   - Na początek możesz trenować na **klatkach z etykietą segmentu** (każda sekwencja ma jedną etykietę: bojka/pozar/palenie/brak_zagrozenia).
 
 **Rezultat:** Wytrenowany model zapisany w `.pth`, który przyjmuje sekwencję klatek i zwraca prawdopodobieństwa dla 4 klas.
 
@@ -130,7 +130,7 @@ Do treningu i ewaluacji modelu potrzebne są nagrania wideo (lub wyciągnięte k
 - **Palenie:** zbiory „smoke” + własne lub znalezione klipy z paleniem.
 - **Brak zagrożenia:** UCF-Crime Normal + ewentualnie fragmenty UCF-101 / własne.
 
-Po zebraniu plików wideo: podział na klatki (OpenCV), zapis w katalogach `data_video/bójka/`, `data_video/pożar/`, `data_video/palenie/`, `data_video/brak_zagrożenia/` lub jeden plik CSV/JSON z ścieżkami i etykietami (oraz przedziałami czasowymi, jeśli są).
+Po zebraniu plików wideo: podział na klatki (OpenCV), zapis w katalogach `data_video/bojka/`, `data_video/pozar/`, `data_video/palenie/`, `data_video/brak_zagrozenia/` lub jeden plik CSV/JSON z ścieżkami i etykietami (oraz przedziałami czasowymi, jeśli są).
 
 
 ## Proponowana struktura katalogów (docelowo)

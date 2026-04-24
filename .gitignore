@@ -22,11 +22,27 @@ Thumbs.db
 
 # Данные и артефакты (тяжёлые или перегенерируемые)
 data/
-data_video/
-data_photos/
+# Видео в data_video/<класс>/ не коммитим; README и .gitkeep — в репо
+data_video/**/*.mp4
+data_video/**/*.avi
+data_video/**/*.mov
+data_video/**/*.mkv
+data_video/**/*.webm
+# data_photos: оставляем README, но игнорируем картинки
+data_photos/**/*.jpg
+data_photos/**/*.jpeg
+data_photos/**/*.png
+data_photos/**/*.webp
+data_photos/**/*.gif
+data_photos/**/*.mp4
+data_photos/**/*.mov
+data_photos/**/*.avi
 videos/
 output_frames/
 danger_detection/checkpoints/*.pth
 
+checkpoints/
+
 # Оставляем папку checkpoints в репо (пустую или с README)
 !danger_detection/checkpoints/.gitkeep
+

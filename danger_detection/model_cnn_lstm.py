@@ -1,17 +1,17 @@
 """
-Model CNN + LSTM do klasyfikacji sekwencji klatek wideo (bójka, palenie, pożar, brak zagrożenia).
+Model CNN + LSTM do klasyfikacji sekwencji klatek wideo (bojka, palenie, pozar, brak_zagrozenia).
 """
 import torch
 import torch.nn as nn
 from .config import IMG_SIZE, NUM_CLASSES, SEQ_LEN
 
-# Po 3 warstwach Conv2d + MaxPool(2): 64 -> 32 -> 16 -> 8
-FEATURE_SIZE = 8
 CNN_OUTPUT_CHANNELS = 128
-CNN_FLAT = CNN_OUTPUT_CHANNELS * FEATURE_SIZE * FEATURE_SIZE  # 8192
 LSTM_INPUT_SIZE = 256
 LSTM_HIDDEN_SIZE = 128
 LSTM_NUM_LAYERS = 1
+# Fixed spatial size after CNN for any IMG_SIZE
+_ADAPTIVE_POOL_HW = (4, 4)
+CNN_FLAT = CNN_OUTPUT_CHANNELS * _ADAPTIVE_POOL_HW[0] * _ADAPTIVE_POOL_HW[1]
 
 
 class CNNFeatureExtractor(nn.Module):
@@ -34,6 +34,7 @@ class CNNFeatureExtractor(nn.Module):
             nn.MaxPool2d(2),
         )
         self.fc = nn.Sequential(
+            nn.AdaptiveAvgPool2d(_ADAPTIVE_POOL_HW),
             nn.Flatten(),
             nn.Linear(CNN_FLAT, LSTM_INPUT_SIZE),
             nn.ReLU(inplace=True),

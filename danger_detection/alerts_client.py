@@ -10,6 +10,7 @@
 """
 
 from datetime import datetime, timezone
+import os
 from typing import List
 
 import requests
@@ -22,6 +23,20 @@ import requests
 # на котором запущен FastAPI Особы 2, например:
 #   BASE_URL = "http://192.168.0.15:8000"
 BASE_URL = "https://threatalertsbackend.onrender.com"
+
+# API token (tenant). Не хардкодим в репозиторий — задавайте через переменную окружения.
+# PowerShell (пример):
+#   $env:THREAT_ALERTS_API_TOKEN="..."; python -m danger_detection.alerts_client
+API_TOKEN = os.getenv("THREAT_ALERTS_API_TOKEN", "").strip()
+
+
+def _auth_headers() -> dict:
+    if not API_TOKEN:
+        raise RuntimeError(
+            "Не задан THREAT_ALERTS_API_TOKEN. "
+            "Нужен заголовок Authorization: Bearer <token>, чтобы бекенд привязал alert к tenant."
+        )
+    return {"Authorization": f"Bearer {API_TOKEN}"}
 
 
 def create_alert(threat_type: str, video_path: str) -> int:
@@ -40,7 +55,12 @@ def create_alert(threat_type: str, video_path: str) -> int:
         "video_path": video_path,
     }
 
-    resp = requests.post(f"{BASE_URL}/api/alerts", json=payload, timeout=5)
+    resp = requests.post(
+        f"{BASE_URL}/api/alerts",
+        json=payload,
+        headers=_auth_headers(),
+        timeout=10,
+    )
     resp.raise_for_status()
     data = resp.json()
     return data["id"]
@@ -50,7 +70,11 @@ def get_device_tokens() -> List[str]:
     """
     Возвращает список FCM‑токенов устройств из бекенда.
     """
-    resp = requests.get(f"{BASE_URL}/api/device/tokens", timeout=5)
+    resp = requests.get(
+        f"{BASE_URL}/api/device/tokens",
+        headers=_auth_headers(),
+        timeout=10,
+    )
     resp.raise_for_status()
     tokens = resp.json()
     return list(tokens)

@@ -2,7 +2,7 @@
 Демонстрация анализа потока с веб‑камеры в реальном времени.
 
 Использует:
-- модель CNNLSTM (pożar / brak zagrożenia и т.д.),
+- модель CNNLSTM (pozar / brak_zagrozenia и т.д.),
 - параметры из config.py,
 - преобразование кадров из dataset.frames_to_tensor.
 
@@ -120,7 +120,7 @@ def main():
             if text:
                 color = (0, 255, 0)
                 # если вероятность выше порога — красным
-                if any(t in text for t in ["pożar", "bójka", "palenie"]) and "(" in text:
+                if any(t in text for t in ["pozar", "bojka", "palenie"]) and "(" in text:
                     try:
                         p = float(text.split("(")[1].split("%")[0]) / 100.0
                         if p >= CONFIDENCE_THRESHOLD:
@@ -138,8 +138,9 @@ def main():
                     cv2.LINE_AA,
                 )
 
-            # Визуальный апскейл для удобного просмотра (модель по‑прежнему работает с 64x64)
-            display_big = cv2.resize(display_frame, (480, 480), interpolation=cv2.INTER_NEAREST)
+            # Визуальный апскейл (модель работает с IMG_SIZE×IMG_SIZE из config)
+            disp = max(480, min(960, IMG_SIZE * 3))
+            display_big = cv2.resize(display_frame, (disp, disp), interpolation=cv2.INTER_NEAREST)
             cv2.imshow("Danger Detection - Live Camera", display_big)
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break

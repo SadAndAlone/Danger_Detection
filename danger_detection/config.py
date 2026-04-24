@@ -8,15 +8,15 @@ from pathlib import Path
 
 # Klasy zagrożeń (zgodnie z wymaganiami projektu)
 CLASSES = [
-    "bójka",
+    "bojka",
     "palenie",
-    "pożar",
-    "brak zagrożenia",
+    "pozar",
+    "brak_zagrozenia",
 ]
 NUM_CLASSES = len(CLASSES)
 
-# Obraz: rozmiar klatki na wejściu do CNN (H, W)
-IMG_SIZE = 64
+# Obraz: rozmiar klatki na wejściu do CNN (H, W).
+IMG_SIZE = 224
 # Długość sekwencji: ile klatek trafia do LSTM (np. ~2 s przy 8 fps)
 SEQ_LEN = 16
 # Co ile sekund wyciągać klatkę przy analizie wideo (segmenty)
@@ -33,7 +33,12 @@ CHECKPOINT_DIR = BASE_DIR / "danger_detection" / "checkpoints"
 CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 MODEL_CHECKPOINT = CHECKPOINT_DIR / "model_danger.pth"
 
-# Hiperparametry treningu (domyślne)
-BATCH_SIZE = 16
+# Hiperparametry treningu (domyślne). Przy większym IMG_SIZE zmniejsz batch, jeśli brakuje VRAM.
+BATCH_SIZE = 8
 EPOCHS = 30
 LR = 1e-3
+
+
+#cd d:\Uni_Project\ImageClassifier\uni_project
+#python -m danger_detection.live_camera
+#python -m danger_detection.alerts_client

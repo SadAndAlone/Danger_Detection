@@ -38,7 +38,7 @@ def main():
 
     model = CNNLSTM(num_classes=dataset.num_classes).to(DEVICE)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=1e-4)
 
     for epoch in range(1, EPOCHS + 1):
         model.train()

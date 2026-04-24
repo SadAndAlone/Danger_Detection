@@ -49,7 +49,7 @@ def frames_to_tensor(frames: list, seq_len: int, img_size: int) -> torch.Tensor:
 class DangerVideoDataset(Dataset):
     """
     Dataset: każdy element to jeden segment wideo (sekwencja klatek) + etykieta.
-    Katalogi w data_video/ = nazwy klas (np. pożar, brak_zagrożenia).
+    Katalogi w data_video/ = nazwy klas (np. pozar, brak_zagrozenia).
     """
 
     def __init__(
@@ -98,7 +98,7 @@ class DangerVideoDataset(Dataset):
         if not self.samples:
             raise ValueError(
                 f"Nie znaleziono żadnego wideo w {self.root}. "
-                f"Umieść pliki .mp4 w podkatalogach, np. {self.root}/pożar/, {self.root}/brak_zagrożenia/"
+                f"Umieść pliki .mp4 w podkatalogach, np. {self.root}/pozar/, {self.root}/brak_zagrozenia/"
             )
 
     def __len__(self) -> int:
