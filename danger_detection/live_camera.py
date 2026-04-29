@@ -1,19 +1,6 @@
 """
-Демонстрация анализа потока с веб‑камеры в реальном времени.
-
-Использует:
-- модель CNNLSTM (pozar / brak_zagrozenia и т.д.),
-- параметры из config.py,
-- преобразование кадров из dataset.frames_to_tensor.
-
 Запуск:
   python -m danger_detection.live_camera
-
-Управление:
-  - окно с картинкой с камеры,
-  - каждые ~2 секунды берётся сегмент из последних кадров и анализируется моделью,
-  - результат печатается в консоль и отображается вверху кадра,
-  - для выхода нажать клавишу 'q' в окне OpenCV.
 """
 
 from collections import deque
@@ -24,7 +11,7 @@ import cv2
 import numpy as np
 import torch
 
-from .config import IMG_SIZE, SEQ_LEN, CLASSES, CONFIDENCE_THRESHOLD
+from .config import IMG_HEIGHT, IMG_WIDTH, SEQ_LEN, CLASSES, CONFIDENCE_THRESHOLD
 from .model_cnn_lstm import CNNLSTM
 from .dataset import frames_to_tensor
 
@@ -62,7 +49,7 @@ def analyze_segment(model: CNNLSTM, frames: list, class_names: list) -> Tuple[st
     if not frames:
         return "no_frames", 0.0
 
-    tensor = frames_to_tensor(frames, SEQ_LEN, IMG_SIZE)  # (T, C, H, W)
+    tensor = frames_to_tensor(frames, SEQ_LEN, IMG_HEIGHT, IMG_WIDTH)  # (T, C, H, W)
     tensor = tensor.unsqueeze(0).to(DEVICE)  # (1, T, C, H, W)
 
     with torch.no_grad():
@@ -101,7 +88,10 @@ def main():
                 break
 
             # Resize под размер модели
-            frame_resized = cv2.resize(frame, (IMG_SIZE, IMG_SIZE), interpolation=cv2.INTER_LINEAR)
+            # OpenCV: (width, height)
+            frame_resized = cv2.resize(
+                frame, (IMG_WIDTH, IMG_HEIGHT), interpolation=cv2.INTER_LINEAR
+            )
             frame_buffer.append(frame_resized)
 
             now = time.time()
@@ -138,9 +128,12 @@ def main():
                     cv2.LINE_AA,
                 )
 
-            # Визуальный апскейл (модель работает с IMG_SIZE×IMG_SIZE из config)
-            disp = max(480, min(960, IMG_SIZE * 3))
-            display_big = cv2.resize(display_frame, (disp, disp), interpolation=cv2.INTER_NEAREST)
+            # Превью: уменьшаем широкий кадр до ~960 px по ширине (сохраняем пропорции)
+            preview_w = min(960, IMG_WIDTH)
+            preview_h = int(IMG_HEIGHT * preview_w / IMG_WIDTH)
+            display_big = cv2.resize(
+                display_frame, (preview_w, preview_h), interpolation=cv2.INTER_NEAREST
+            )
             cv2.imshow("Danger Detection - Live Camera", display_big)
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break

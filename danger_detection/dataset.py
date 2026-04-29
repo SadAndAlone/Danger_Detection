@@ -8,7 +8,8 @@ import numpy as np
 
 from .config import (
     DATA_VIDEO_DIR,
-    IMG_SIZE,
+    IMG_HEIGHT,
+    IMG_WIDTH,
     SEQ_LEN,
     SEGMENT_DURATION_SEC,
     EXTRACT_FPS,
@@ -26,13 +27,15 @@ def _normalize_frame(frame: np.ndarray) -> np.ndarray:
     return x
 
 
-def frames_to_tensor(frames: list, seq_len: int, img_size: int) -> torch.Tensor:
+def frames_to_tensor(
+    frames: list, seq_len: int, img_h: int, img_w: int
+) -> torch.Tensor:
     """
     Lista klatek (H,W,3) BGR -> tensor (seq_len, 3, H, W).
     Jeśli mniej niż seq_len klatek: powtarzamy ostatnią. Jeśli więcej: obcinamy.
     """
     if not frames:
-        return torch.zeros(seq_len, 3, img_size, img_size, dtype=torch.float32)
+        return torch.zeros(seq_len, 3, img_h, img_w, dtype=torch.float32)
 
     arr = np.stack([_normalize_frame(f) for f in frames], axis=0)
     # (N, H, W, 3) -> (N, 3, H, W)
@@ -58,7 +61,7 @@ class DangerVideoDataset(Dataset):
         segment_duration_sec: float = SEGMENT_DURATION_SEC,
         fps: float = EXTRACT_FPS,
         seq_len: int = SEQ_LEN,
-        resize: tuple = (IMG_SIZE, IMG_SIZE),
+        resize: tuple = (IMG_HEIGHT, IMG_WIDTH),
     ):
         self.root = Path(root) if root is not None else DATA_VIDEO_DIR
         self.segment_duration_sec = segment_duration_sec
@@ -113,7 +116,7 @@ class DangerVideoDataset(Dataset):
             fps=self.fps,
             resize=self.resize,
         )
-        x = frames_to_tensor(frames, self.seq_len, self.resize[0])
+        x = frames_to_tensor(frames, self.seq_len, self.resize[0], self.resize[1])
         return x, class_idx
 
     @property

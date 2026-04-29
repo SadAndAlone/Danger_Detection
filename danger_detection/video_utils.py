@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, List, Tuple, Generator
 import numpy as np
 
-from .config import IMG_SIZE
+from .config import IMG_HEIGHT, IMG_WIDTH
 
 # Domyślny resize = wejście modelu; jawne ``resize=None`` = bez skalowania (oryginalna rozdzielczość).
 _USE_CONFIG_IMG_SIZE = object()
@@ -23,12 +23,12 @@ def video_to_frames(
     :param video_path: ścieżka do pliku wideo
     :param every_n_frames: co którą klatkę brać (1 = wszystkie)
     :param max_frames: maksymalna liczba klatek (None = bez limitu)
-    :param resize: (H, W); domyślnie ``(IMG_SIZE, IMG_SIZE)`` z ``config``; ``None`` = bez skalowania
+    :param resize: (H, W); domyślnie ``(IMG_HEIGHT, IMG_WIDTH)`` z ``config``; ``None`` = bez skalowania
     :return: lista arrayów (H, W, 3) BGR
     """
     eff_resize: Tuple[int, int] | None
     if resize is _USE_CONFIG_IMG_SIZE:
-        eff_resize = (IMG_SIZE, IMG_SIZE)
+        eff_resize = (IMG_HEIGHT, IMG_WIDTH)
     else:
         eff_resize = resize  # type: ignore[assignment]
 
@@ -67,10 +67,10 @@ def video_to_frame_generator(
 ) -> Generator[np.ndarray, None, None]:
     """
     Generator klatek (oszczędza pamięć przy długich wideo).
-    Domyślnie ``(IMG_SIZE, IMG_SIZE)``; ``resize=None`` = bez skalowania.
+    Domyślnie ``(IMG_HEIGHT, IMG_WIDTH)``; ``resize=None`` = bez skalowania.
     """
     if resize is _USE_CONFIG_IMG_SIZE:
-        eff_resize: Tuple[int, int] | None = (IMG_SIZE, IMG_SIZE)
+        eff_resize: Tuple[int, int] | None = (IMG_HEIGHT, IMG_WIDTH)
     else:
         eff_resize = resize  # type: ignore[assignment]
 
@@ -123,7 +123,7 @@ def extract_segments(
     video_path: str | Path,
     segment_duration_sec: float = 2.0,
     fps: float = 8.0,
-    resize: Tuple[int, int] = (IMG_SIZE, IMG_SIZE),
+    resize: Tuple[int, int] = (IMG_HEIGHT, IMG_WIDTH),
 ) -> List[Tuple[float, float, List[np.ndarray]]]:
     """
     Dzieli wideo na segmenty czasowe i dla każdego zwraca listę klatek.
@@ -179,7 +179,7 @@ def extract_frames_for_segment(
     segment_index: int,
     segment_duration_sec: float = 2.0,
     fps: float = 8.0,
-    resize: Tuple[int, int] = (IMG_SIZE, IMG_SIZE),
+    resize: Tuple[int, int] = (IMG_HEIGHT, IMG_WIDTH),
 ) -> List[np.ndarray]:
     """
     Wyciąga klatki tylko dla jednego segmentu (bez ładowania całego wideo).

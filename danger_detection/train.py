@@ -1,7 +1,3 @@
-"""
-Trening modelu CNN+LSTM na segmentach wideo z data_video/<klasa>/.
-Uruchomienie: python -m danger_detection.train
-"""
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader

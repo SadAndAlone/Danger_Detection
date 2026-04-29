@@ -22,3 +22,5 @@ python -m danger_detection.train
 ```
 
 Классы берутся **из имён этих папок** (сортировка по алфавиту влияет на индексы при обучении). При четырёх папках порядок: `bojka`, `brak_zagrozenia`, `palenie`, `pozar`.
+
+Кадры для модели приводятся к размеру **1280×720** (см. `IMG_WIDTH` / `IMG_HEIGHT` в `danger_detection/config.py`).

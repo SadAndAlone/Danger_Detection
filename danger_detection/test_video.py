@@ -12,7 +12,7 @@ from pathlib import Path
 import cv2
 
 from danger_detection.video_utils import video_to_frames, get_video_info, extract_segments
-from danger_detection.config import IMG_SIZE, SEGMENT_DURATION_SEC, EXTRACT_FPS
+from danger_detection.config import IMG_HEIGHT, IMG_WIDTH, SEGMENT_DURATION_SEC, EXTRACT_FPS
 
 
 def main():
@@ -36,9 +36,11 @@ def main():
     frames = video_to_frames(
         video_path,
         every_n_frames=max(1, int(info["fps"] // EXTRACT_FPS)),
-        resize=(IMG_SIZE, IMG_SIZE),
+        resize=(IMG_HEIGHT, IMG_WIDTH),
     )
-    print(f"  Wyciągnięte klatki (co ~{EXTRACT_FPS} fps, rozmiar {IMG_SIZE}x{IMG_SIZE}): {len(frames)}")
+    print(
+        f"  Wyciągnięte klatki (co ~{EXTRACT_FPS} fps, rozmiar {IMG_WIDTH}x{IMG_HEIGHT}): {len(frames)}"
+    )
 
     if save_frames_dir is not None:
         save_frames_dir = Path(save_frames_dir)
@@ -52,7 +54,7 @@ def main():
         video_path,
         segment_duration_sec=SEGMENT_DURATION_SEC,
         fps=EXTRACT_FPS,
-        resize=(IMG_SIZE, IMG_SIZE),
+        resize=(IMG_HEIGHT, IMG_WIDTH),
     )
     print(f"  Segmenty (po {SEGMENT_DURATION_SEC} s): {len(segments)}")
     if segments:

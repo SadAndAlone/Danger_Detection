@@ -3,13 +3,13 @@ Model CNN + LSTM do klasyfikacji sekwencji klatek wideo (bojka, palenie, pozar, 
 """
 import torch
 import torch.nn as nn
-from .config import IMG_SIZE, NUM_CLASSES, SEQ_LEN
+from .config import IMG_HEIGHT, IMG_WIDTH, NUM_CLASSES, SEQ_LEN
 
 CNN_OUTPUT_CHANNELS = 128
 LSTM_INPUT_SIZE = 256
 LSTM_HIDDEN_SIZE = 128
 LSTM_NUM_LAYERS = 1
-# Fixed spatial size after CNN for any IMG_SIZE
+# Fixed spatial size after CNN for any input resolution
 _ADAPTIVE_POOL_HW = (4, 4)
 CNN_FLAT = CNN_OUTPUT_CHANNELS * _ADAPTIVE_POOL_HW[0] * _ADAPTIVE_POOL_HW[1]
 
@@ -57,7 +57,7 @@ class CNNLSTM(nn.Module):
     def __init__(
         self,
         num_classes: int = NUM_CLASSES,
-        cnn_input_size: tuple = (IMG_SIZE, IMG_SIZE),
+        cnn_input_size: tuple = (IMG_HEIGHT, IMG_WIDTH),
         lstm_hidden: int = LSTM_HIDDEN_SIZE,
         lstm_layers: int = LSTM_NUM_LAYERS,
     ):

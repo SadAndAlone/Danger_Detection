@@ -15,8 +15,10 @@ CLASSES = [
 ]
 NUM_CLASSES = len(CLASSES)
 
-# Obraz: rozmiar klatki na wejściu do CNN (H, W).
-IMG_SIZE = 224
+# Rozmiar klatki na wejściu do CNN: **720p** = 1280×720 (szerokość × wysokość w OpenCV resize).
+# Uwaga: większy obraz = więcej VRAM i wolniejszy trening — przy OOM zmniejsz BATCH_SIZE.
+IMG_WIDTH = 1280
+IMG_HEIGHT = 720
 # Długość sekwencji: ile klatek trafia do LSTM (np. ~2 s przy 8 fps)
 SEQ_LEN = 16
 # Co ile sekund wyciągać klatkę przy analizie wideo (segmenty)
@@ -33,8 +35,8 @@ CHECKPOINT_DIR = BASE_DIR / "danger_detection" / "checkpoints"
 CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 MODEL_CHECKPOINT = CHECKPOINT_DIR / "model_danger.pth"
 
-# Hiperparametry treningu (domyślne). Przy większym IMG_SIZE zmniejsz batch, jeśli brakuje VRAM.
-BATCH_SIZE = 8
+# Hiperparametry treningu (domyślne). Przy 720p zacznij od mniejszego batcha; na RTX 5090 możesz podnieść, jeśli VRAM pozwala.
+BATCH_SIZE = 4
 EPOCHS = 30
 LR = 1e-3
 
