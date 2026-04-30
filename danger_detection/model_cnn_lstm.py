@@ -124,3 +124,23 @@ class LSTMClassifier(nn.Module):
         lstm_out, _ = self.lstm(x)
         out = lstm_out[:, -1, :]
         return self.classifier(out)
+
+
+class CNNExtractorLSTM(nn.Module):
+    """
+    Inference/training wrapper: raw frames -> extractor -> LSTMClassifier.
+    Useful when LSTMClassifier was trained from cached CNN features.
+    """
+
+    def __init__(self, extractor: CNNFeatureExtractor, head: LSTMClassifier):
+        super().__init__()
+        self.extractor = extractor
+        self.head = head
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x: (B, T, C, H, W)
+        B, T, C, H, W = x.shape
+        x = x.view(B * T, C, H, W)
+        feats = self.extractor(x)  # (B*T, 256)
+        feats = feats.view(B, T, -1)  # (B, T, 256)
+        return self.head(feats)

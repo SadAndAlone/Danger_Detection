@@ -57,6 +57,12 @@ def main() -> None:
         default=0,
         help="Optional limit of segments to cache (0 = no limit).",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=123,
+        help="Seed for CNNFeatureExtractor init (must match between cache and inference).",
+    )
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir)
@@ -72,8 +78,14 @@ def main() -> None:
     print(f"Classes: {dataset.class_names}")
     print(f"Segments: {len(dataset)}")
 
+    torch.manual_seed(args.seed)
     extractor = CNNFeatureExtractor().to(DEVICE)
     extractor.eval()
+
+    # Save extractor weights used to produce the cache (needed for live inference)
+    extractor_path = cache_dir / "extractor_state_dict.pth"
+    torch.save({"state_dict": extractor.state_dict(), "seed": int(args.seed)}, extractor_path)
+    print(f"Saved extractor: {extractor_path}")
 
     out_dtype = torch.float16 if args.dtype == "float16" else torch.float32
 

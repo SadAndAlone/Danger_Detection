@@ -13,7 +13,7 @@ from .config import (
     MODEL_CHECKPOINT,
 )
 from .dataset import DangerFeatureDataset, DangerVideoDataset
-from .model_cnn_lstm import CNNLSTM, LSTMClassifier
+from .model_cnn_lstm import CNNFeatureExtractor, CNNLSTM, LSTMClassifier, CNNExtractorLSTM
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -32,6 +32,7 @@ def main():
         if dataset.class_names:
             print(f"Klasy: {dataset.class_names}")
         print(f"Liczba segmentów (cache): {len(dataset)}")
+        # Train only the head on cached features (fast).
         model = LSTMClassifier(num_classes=len(dataset.class_names)).to(DEVICE)
     else:
         dataset = DangerVideoDataset(root=DATA_VIDEO_DIR)
@@ -94,27 +95,61 @@ def main():
         if save_each_epoch:
             Path(MODEL_CHECKPOINT).parent.mkdir(parents=True, exist_ok=True)
             epoch_path = Path(MODEL_CHECKPOINT).with_name(f"model_danger_epoch_{epoch:03d}.pth")
-            torch.save(
-                {
-                    "state_dict": model.state_dict(),
-                    "classes": dataset.class_names,
-                    "num_classes": dataset.num_classes,
-                    "epoch": epoch,
-                    "use_cache": use_cache,
-                },
-                epoch_path,
-            )
+            if use_cache:
+                extractor_path = Path(cache_dir) / "extractor_state_dict.pth"
+                extractor_state = None
+                if extractor_path.exists():
+                    extractor_state = torch.load(extractor_path, map_location="cpu")["state_dict"]
+                torch.save(
+                    {
+                        "mode": "feature_cache",
+                        "extractor_state_dict": extractor_state,
+                        "lstm_state_dict": model.state_dict(),
+                        "classes": dataset.class_names,
+                        "num_classes": len(dataset.class_names),
+                        "epoch": epoch,
+                    },
+                    epoch_path,
+                )
+            else:
+                torch.save(
+                    {
+                        "mode": "raw_video",
+                        "state_dict": model.state_dict(),
+                        "classes": dataset.class_names,
+                        "num_classes": dataset.num_classes,
+                        "epoch": epoch,
+                    },
+                    epoch_path,
+                )
             print(f"  Zapisano checkpoint: {epoch_path}")
 
     Path(MODEL_CHECKPOINT).parent.mkdir(parents=True, exist_ok=True)
-    torch.save(
-        {
-            "state_dict": model.state_dict(),
-            "classes": dataset.class_names,
-            "num_classes": dataset.num_classes,
-        },
-        MODEL_CHECKPOINT,
-    )
+    if use_cache:
+        extractor_path = Path(cache_dir) / "extractor_state_dict.pth"
+        extractor_state = None
+        if extractor_path.exists():
+            extractor_state = torch.load(extractor_path, map_location="cpu")["state_dict"]
+        torch.save(
+            {
+                "mode": "feature_cache",
+                "extractor_state_dict": extractor_state,
+                "lstm_state_dict": model.state_dict(),
+                "classes": dataset.class_names,
+                "num_classes": len(dataset.class_names),
+            },
+            MODEL_CHECKPOINT,
+        )
+    else:
+        torch.save(
+            {
+                "mode": "raw_video",
+                "state_dict": model.state_dict(),
+                "classes": dataset.class_names,
+                "num_classes": dataset.num_classes,
+            },
+            MODEL_CHECKPOINT,
+        )
     print(f"\nModel zapisany: {MODEL_CHECKPOINT}")
 
 

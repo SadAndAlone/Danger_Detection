@@ -12,14 +12,14 @@ import numpy as np
 import torch
 
 from .config import IMG_HEIGHT, IMG_WIDTH, SEQ_LEN, CLASSES, CONFIDENCE_THRESHOLD
-from .model_cnn_lstm import CNNLSTM
+from .model_cnn_lstm import CNNFeatureExtractor, CNNLSTM, LSTMClassifier, CNNExtractorLSTM
 from .dataset import frames_to_tensor
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def init_model(checkpoint_path: str) -> Tuple[CNNLSTM, list]:
+def init_model(checkpoint_path: str) -> Tuple[torch.nn.Module, list]:
     """
     Загружает модель и классы из чекпоинта.
     Если в чекпоинте есть поле 'classes', используем его (кол-во классов может отличаться
@@ -35,14 +35,25 @@ def init_model(checkpoint_path: str) -> Tuple[CNNLSTM, list]:
         if "state_dict" in ckpt:
             state_dict = ckpt["state_dict"]
 
-    model = CNNLSTM(num_classes=len(class_names))
-    model.load_state_dict(state_dict)
+    # Two checkpoint formats:
+    # 1) raw_video: {"state_dict": CNNLSTM...}
+    # 2) feature_cache: {"extractor_state_dict": CNNFeatureExtractor..., "lstm_state_dict": LSTMClassifier...}
+    if isinstance(ckpt, dict) and "lstm_state_dict" in ckpt:
+        extractor = CNNFeatureExtractor()
+        if ckpt.get("extractor_state_dict") is not None:
+            extractor.load_state_dict(ckpt["extractor_state_dict"])
+        head = LSTMClassifier(num_classes=len(class_names))
+        head.load_state_dict(ckpt["lstm_state_dict"])
+        model = CNNExtractorLSTM(extractor, head)
+    else:
+        model = CNNLSTM(num_classes=len(class_names))
+        model.load_state_dict(state_dict)
     model.to(DEVICE)
     model.eval()
     return model, list(class_names)
 
 
-def analyze_segment(model: CNNLSTM, frames: list, class_names: list) -> Tuple[str, float]:
+def analyze_segment(model: torch.nn.Module, frames: list, class_names: list) -> Tuple[str, float]:
     """
     Анализирует список кадров, возвращает (название класса, вероятность).
     """
