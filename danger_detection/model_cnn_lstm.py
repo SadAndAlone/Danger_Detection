@@ -89,3 +89,38 @@ class CNNLSTM(nn.Module):
         out = lstm_out[:, -1, :]  # (B, lstm_hidden)
         logits = self.classifier(out)
         return logits
+
+
+class LSTMClassifier(nn.Module):
+    """
+    Klasyfikator sekwencji cech (np. z cache): (B, T, LSTM_INPUT_SIZE) -> (B, num_classes).
+    Przyspiesza trening, bo omija kosztowną ekstrakcję cech z obrazu.
+    """
+
+    def __init__(
+        self,
+        num_classes: int = NUM_CLASSES,
+        lstm_hidden: int = LSTM_HIDDEN_SIZE,
+        lstm_layers: int = LSTM_NUM_LAYERS,
+    ):
+        super().__init__()
+        self.lstm = nn.LSTM(
+            input_size=LSTM_INPUT_SIZE,
+            hidden_size=lstm_hidden,
+            num_layers=lstm_layers,
+            batch_first=True,
+            dropout=0.0 if lstm_layers == 1 else 0.2,
+        )
+        self.classifier = nn.Sequential(
+            nn.Linear(lstm_hidden, 64),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.3),
+            nn.Linear(64, num_classes),
+        )
+        self.num_classes = num_classes
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x: (B, T, LSTM_INPUT_SIZE)
+        lstm_out, _ = self.lstm(x)
+        out = lstm_out[:, -1, :]
+        return self.classifier(out)

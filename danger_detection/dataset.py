@@ -5,6 +5,7 @@ import torch
 from torch.utils.data import Dataset
 from pathlib import Path
 import numpy as np
+from typing import List, Tuple
 
 from .config import (
     DATA_VIDEO_DIR,
@@ -122,3 +123,42 @@ class DangerVideoDataset(Dataset):
     @property
     def num_classes(self) -> int:
         return len(self.class_names)
+
+
+class DangerFeatureDataset(Dataset):
+    """
+    Dataset dla cache cech: cache_features/<class>/*.pt -> (T, LSTM_INPUT_SIZE) + label.
+
+    Plik .pt powinien zawierać dict z polami:
+      - x: Tensor (T, 256) float16/float32
+      - y: int
+      - classes: list[str]
+    """
+
+    def __init__(self, cache_root: Path | str):
+        self.cache_root = Path(cache_root)
+        if not self.cache_root.exists():
+            raise FileNotFoundError(f"Cache nie istnieje: {self.cache_root}")
+
+        self.files: List[Path] = sorted([p for p in self.cache_root.rglob("*.pt") if p.is_file()])
+        if not self.files:
+            raise ValueError(f"Brak plików .pt w cache: {self.cache_root}")
+
+        # Wczytaj classes z pierwszego pliku (dla logów)
+        first = torch.load(self.files[0], map_location="cpu")
+        self.class_names = list(first.get("classes", [])) if isinstance(first, dict) else []
+
+    def __len__(self) -> int:
+        return len(self.files)
+
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
+        data = torch.load(self.files[idx], map_location="cpu")
+        if not isinstance(data, dict) or "x" not in data or "y" not in data:
+            raise ValueError(f"Nieprawidłowy format cache: {self.files[idx]}")
+        x = data["x"].float()  # (T, 256)
+        y = int(data["y"])
+        return x, y
+
+    @property
+    def num_classes(self) -> int:
+        return len(self.class_names) if self.class_names else 0
