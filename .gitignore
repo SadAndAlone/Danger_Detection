@@ -40,6 +40,7 @@ data_photos/**/*.avi
 videos/
 output_frames/
 danger_detection/checkpoints/*.pth
+danger_detection/alert_clips/**/*.mp4
 
 checkpoints/
 

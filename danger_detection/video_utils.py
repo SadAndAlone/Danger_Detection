@@ -1,6 +1,8 @@
 """
 Dzielenie wideo na klatki i segmenty (OpenCV).
 """
+import shutil
+import subprocess
 import cv2
 from pathlib import Path
 from typing import Any, List, Tuple, Generator
@@ -223,3 +225,140 @@ def extract_frames_for_segment(
         cap.release()
 
     return frames
+
+
+def _normalize_bgr_frames_even(
+    frames: List[np.ndarray],
+) -> Tuple[List[np.ndarray], int, int]:
+    """Ujednolica rozmiar klatek; libx264/yuv420p wymaga parzystych szer./wys."""
+    h0, w0 = frames[0].shape[:2]
+    w, h = w0 - (w0 % 2), h0 - (h0 % 2)
+    w, h = max(w, 2), max(h, 2)
+    out: List[np.ndarray] = []
+    for fr in frames:
+        if fr.shape[0] != h or fr.shape[1] != w:
+            fr = cv2.resize(fr, (w, h), interpolation=cv2.INTER_LINEAR)
+        out.append(np.ascontiguousarray(fr, dtype=np.uint8))
+    return out, w, h
+
+
+def _write_mp4_ffmpeg_libx264(
+    frames: List[np.ndarray],
+    out_path: Path,
+    fps: float,
+    w: int,
+    h: int,
+    ffmpeg_exe: str,
+) -> None:
+    """
+    MP4 dla przeglądarek: H.264 baseline + yuv420p + AAC (cisza) + faststart.
+    Bez ścieżki audio część odtwarzaczy HTML5 zgłasza „uszkodzony / nieobsługiwany” format.
+    """
+    eff_fps = float(max(1.0, min(fps, 120.0)))
+    cmd = [
+        ffmpeg_exe,
+        "-y",
+        "-loglevel",
+        "error",
+        "-f",
+        "rawvideo",
+        "-pix_fmt",
+        "bgr24",
+        "-video_size",
+        f"{w}x{h}",
+        "-framerate",
+        str(eff_fps),
+        "-i",
+        "-",
+        "-f",
+        "lavfi",
+        "-i",
+        "anullsrc=channel_layout=mono:sample_rate=48000",
+        "-map",
+        "0:v:0",
+        "-map",
+        "1:a:0",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-profile:v",
+        "baseline",
+        "-pix_fmt",
+        "yuv420p",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-movflags",
+        "+faststart",
+        "-shortest",
+        str(out_path),
+    ]
+    proc = subprocess.Popen(
+        cmd,
+        stdin=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if proc.stdin is None:
+        raise RuntimeError("ffmpeg: brak stdin pipe")
+    try:
+        for fr in frames:
+            proc.stdin.write(fr.tobytes())
+        proc.stdin.close()
+        err_b = proc.stderr.read() if proc.stderr else b""
+        rc = proc.wait()
+        err = err_b.decode(errors="replace")
+        if rc != 0:
+            raise RuntimeError(f"ffmpeg zakończył się kodem {rc}: {err[:800]}")
+    except Exception:
+        if proc.poll() is None:
+            proc.kill()
+        try:
+            proc.stdin.close()
+        except (BrokenPipeError, OSError):
+            pass
+        raise
+
+
+def write_bgr_frames_to_mp4(
+    frames: List[np.ndarray],
+    out_path: str | Path,
+    fps: float,
+) -> Path:
+    """
+    Zapisuje listę klatek BGR do MP4.
+
+    Preferuje **ffmpeg**: **H.264 baseline** + **yuv420p** + **AAC** (cisza) + **faststart**
+    — zgodne z typowym `<video>` w Chrome; OpenCV ``mp4v`` bywa „uszkodzony” dla przeglądarek.
+
+    Jeśli ``ffmpeg`` nie jest w PATH, używa VideoWriter (``mp4v``) i parzystych wymiarów.
+    """
+    if not frames:
+        raise ValueError("write_bgr_frames_to_mp4: pusta lista klatek")
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    frames_n, w, h = _normalize_bgr_frames_even(frames)
+    eff_fps = float(max(1.0, min(fps, 120.0)))
+
+    ffmpeg_exe = shutil.which("ffmpeg")
+    if ffmpeg_exe:
+        try:
+            _write_mp4_ffmpeg_libx264(frames_n, out_path, eff_fps, w, h, ffmpeg_exe)
+            return out_path
+        except (OSError, RuntimeError, subprocess.SubprocessError):
+            pass
+
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    writer = cv2.VideoWriter(str(out_path), fourcc, eff_fps, (w, h))
+    if not writer.isOpened():
+        raise RuntimeError(
+            f"Nie można utworzyć VideoWriter: {out_path}. "
+            "Zainstaluj ffmpeg (https://ffmpeg.org) i dodaj do PATH — wtedy zapis będzie H.264."
+        )
+    try:
+        for fr in frames_n:
+            writer.write(fr)
+    finally:
+        writer.release()
+    return out_path

@@ -28,6 +28,20 @@ SEGMENT_DURATION_SEC = 2.0
 # Próg pewności: powyżej tej wartości zapisujemy przedział jako zagrożenie
 CONFIDENCE_THRESHOLD = 0.70
 
+# Nagrywanie klipu przy alarmie z kamery (live_camera): sekundy przed/po wykryciu
+ALERT_CLIP_BEFORE_SEC = 5.0
+ALERT_CLIP_AFTER_SEC = 5.0
+# Minimalny odstęp między wysłanymi alarmami (żeby nie spamować API)
+ALERT_COOLDOWN_SEC = 30.0
+# Katalog zapisu mp4 (nie commitujemy dużych plików — .gitignore)
+ALERT_CLIPS_DIR = Path(__file__).resolve().parent / "alert_clips"
+# Rozdzielczość klipu alarmowego (mniejsza = mniej kopiowania RAM i płynniejszy podgląd).
+# Wysokość 0 = proporcjonalnie do szerokości i proporcji kamery.
+ALERT_CLIP_RECORD_WIDTH = 640
+ALERT_CLIP_RECORD_HEIGHT = 0
+# Maks. szerokość okna podglądu (live_camera) — mniejsza = mniej pikseli do rysowania
+LIVE_PREVIEW_MAX_WIDTH = 640
+
 # Ścieżki (względem katalogu projektu)
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_VIDEO_DIR = BASE_DIR / "data_video"
